@@ -1,0 +1,49 @@
+name: "Resolve: Lint"
+description: "A linter for Django templates to search for broken extends and includes"
+
+inputs:
+  version:
+    description: "The lint version"
+    required: false
+    default: "latest"
+  config:
+    description: "A path to resolve.toml"
+    required: false
+    default: ""
+  project:
+    description: "The Django project root"
+    required: false
+    default: "."
+  verbose:
+    description: "Enable verbose output"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download lint
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          URL=$(curl -s https://api.github.com/repos/braycarlson/resolve/releases/latest \
+            | grep browser_download_url \
+            | grep lint \
+            | cut -d '"' -f 4)
+        else
+          URL="https://github.com/braycarlson/resolve/releases/download/${{ inputs.version }}/lint"
+        fi
+        curl -L "$URL" -o /usr/local/bin/lint
+        chmod +x /usr/local/bin/lint
+
+    - name: Run lint
+      shell: bash
+      run: |
+        ARGS=""
+        if [ -n "${{ inputs.config }}" ]; then
+          ARGS="$ARGS --config ${{ inputs.config }}"
+        fi
+        if [ "${{ inputs.project }}" != "." ]; then
+          ARGS="$ARGS --project ${{ inputs.project }}"
+        fi
+        lint $ARGS
